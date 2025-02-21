@@ -17,7 +17,7 @@ import {
 export default function Home() {
 	const [geminiDownload, setGeminiDownload] = useState("");
 	const [pairAvailability, setPairAvailability] = useState("");
-	const [downloadprogress, setDownloadProgress] = useState("");
+	//const [downloadprogress, setDownloadProgress] = useState("");
 	const [translation, setTranslation] = useState("");
 
 	const [detectorAvailability, setDetectorAvailability] = useState("");
@@ -29,26 +29,24 @@ export default function Home() {
 	const text = "Where is the next bus stop, please?";
 
 	useEffect(() => {
-		setGeminiDownload(confirmGeminiDownload());
-		setPairAvailability(
-			checkLanguageAvailability(sourceLanguage, targetLanguage)
-		);
-		setDownloadProgress(
-			lanPairDownloadProgress(sourceLanguage, targetLanguage)
-		);
-		setTranslation(translateFunc(sourceLanguage, targetLanguage, text));
-		setDetectorAvailability(checkDetectorAvailability());
-		setGivenLangDetect(checkDetectorGivenAvailability(sourceLanguage));
-		setDetectedLang(detectLang(text));
-	}, [
-		confirmGeminiDownload,
-		checkLanguageAvailability,
-		sourceLanguage,
-		targetLanguage,
-		lanPairDownloadProgress,
-		translateFunc,
-		detectLang,
-	]);
+		const asyncAPICall = async () => {
+			setGeminiDownload(await confirmGeminiDownload());
+			setPairAvailability(
+				await checkLanguageAvailability(sourceLanguage, targetLanguage)
+			);
+			lanPairDownloadProgress(sourceLanguage, targetLanguage);
+			setTranslation(
+				await translateFunc(sourceLanguage, targetLanguage, text)
+			);
+			setDetectorAvailability(await checkDetectorAvailability());
+			setGivenLangDetect(
+				await checkDetectorGivenAvailability(sourceLanguage)
+			);
+			setDetectedLang(await detectLang(text));
+		};
+
+		asyncAPICall();
+	}, [sourceLanguage, targetLanguage]);
 	return (
 		<div className="space-y-4">
 			<div className="space-y-2">
@@ -69,15 +67,15 @@ export default function Home() {
 						Check if language pair({sourceLanguage} =&gt;{" "}
 						{targetLanguage}) can be used: <b>{pairAvailability}</b>
 					</p>
-					<p>
+					{/*<p>
 						Language pair({sourceLanguage} =&gt; {targetLanguage})
 						download progress: <b>{downloadprogress}</b> somethings
 						up with this guy
-					</p>
+					</p>*/}
 					<p>
-						The translation of the text <b>"{text}"</b> from{" "}
-						<b>{sourceLanguage}</b> to <b>{targetLanguage}</b> is:{" "}
-						<b>{translation}</b>
+						The translation of the text <b>&quot;{text}&quot;</b>{" "}
+						from <b>{sourceLanguage}</b> to <b>{targetLanguage}</b>{" "}
+						is: <b>{translation}</b>
 					</p>
 				</div>
 			</div>
