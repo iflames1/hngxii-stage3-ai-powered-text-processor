@@ -114,51 +114,63 @@ export default function Home() {
 		<div className="max-w-2xl mx-auto p-4 h-screen flex flex-col">
 			<Card className="flex flex-col h-full">
 				<CardContent className="flex-1 overflow-y-auto p-4 space-y-4 mb-16">
-					{messages.map((message) => (
-						<div key={message.id} className="space-y-6">
-							<UserText
-								message={message}
-								isDetecting={isDetecting}
-							/>
+					{messages.length === 0 ? (
+						<p className="text-center text-gray-500 h-full flex items-center justify-center">
+							Welcome to Chad AI, start by typing a message in the
+							input box below
+						</p>
+					) : (
+						messages.map((message) => (
+							<div key={message.id} className="space-y-6">
+								<UserText
+									message={message}
+									isDetecting={isDetecting}
+								/>
 
-							<ActionButtons
-								message={message}
-								handleTranslate={handleTranslate}
-								updateMessage={updateMessage}
-							/>
-							{showTranslateOptions &&
-								selectedMessage === message.id && (
-									<LangOptions
-										languages={languages}
-										message={message}
-										setIsTranslating={setIsTranslating}
-										updateMessage={updateMessage}
-										isDetecting={isDetecting}
-										messages={messages}
-									/>
+								<ActionButtons
+									message={message}
+									handleTranslate={handleTranslate}
+									updateMessage={updateMessage}
+								/>
+								{showTranslateOptions &&
+									selectedMessage === message.id && (
+										<LangOptions
+											languages={languages}
+											message={message}
+											setIsTranslating={setIsTranslating}
+											updateMessage={updateMessage}
+											isDetecting={isDetecting}
+											messages={messages}
+										/>
+									)}
+								{message.translations &&
+									Object.entries(message.translations).map(
+										([lang, text]) => (
+											<div
+												key={lang}
+												className="relative"
+											>
+												<Translation
+													text={text}
+													lang={lang}
+													getLanguageName={
+														getLanguageName
+													}
+													isTranslating={
+														isTranslating
+													}
+												/>
+											</div>
+										)
+									)}
+								{message.summary && (
+									<div className="border border-input bg-background shadow-sm rounded-lg p-3 max-w-[80%] w-fit">
+										{message.summary}
+									</div>
 								)}
-							{message.translations &&
-								Object.entries(message.translations).map(
-									([lang, text]) => (
-										<div key={lang} className="relative">
-											<Translation
-												text={text}
-												lang={lang}
-												getLanguageName={
-													getLanguageName
-												}
-												isTranslating={isTranslating}
-											/>
-										</div>
-									)
-								)}
-							{message.summary && (
-								<div className="border border-input bg-background shadow-sm rounded-lg p-3 max-w-[80%] w-fit">
-									{message.summary}
-								</div>
-							)}
-						</div>
-					))}
+							</div>
+						))
+					)}
 				</CardContent>
 				<InputArea
 					currentMessage={currentMessage}
