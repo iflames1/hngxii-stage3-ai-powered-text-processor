@@ -20,9 +20,6 @@ export default function Home() {
 	const [currentMessage, setCurrentMessage] = useState("");
 	const [showTranslateOptions, setShowTranslateOptions] = useState(false);
 	const [selectedMessage, setSelectedMessage] = useState<number | null>(null);
-	const [detectedLanguage, setDetectedLanguage] = useState<
-		string | undefined
-	>();
 	const [isDetecting, setIsDetecting] = useState(false);
 
 	const languages = [
@@ -34,35 +31,40 @@ export default function Home() {
 		{ name: "French", code: "fr" },
 	];
 
+	const updateMessage = (messageId: number, updates: Partial<Message>) => {
+		setMessages((prev) =>
+			prev.map((msg) =>
+				msg.id === messageId ? { ...msg, ...updates } : msg
+			)
+		);
+	};
+
 	const handleSend = async () => {
-		if (currentMessage.trim()) {
-			setIsDetecting(true);
+		if (!currentMessage.trim()) return;
+		setIsDetecting(true);
 
-			const newMessage = {
-				text: currentMessage,
-				id: Date.now(),
-				detectedLang: detectedLanguage,
-			};
+		const newMessage: Message = {
+			text: currentMessage,
+			id: Date.now(),
+		};
 
-			setMessages((prev) => [...prev, newMessage]);
-			setCurrentMessage("");
+		setMessages((prev) => [...prev, newMessage]);
+		setCurrentMessage("");
 
-			const text = currentMessage;
-			let detectedLang: string | undefined;
-			if (!checkDetectorSupport()) {
-				detectedLang = "language detection is not supported";
-				setDetectedLanguage(detectedLang);
-			} else {
-				detectedLang = await detectLang(text);
-				detectedLang =
-					languages.find((lang) => lang.code === detectedLang)
-						?.name || detectedLang;
-				setDetectedLanguage(detectedLang);
-			}
-			setIsDetecting(false);
-
-			console.log(detectedLanguage);
+		if (!checkDetectorSupport()) {
+			updateMessage(newMessage.id, {
+				detectedLang: "Language detection not supported",
+			});
+			return;
 		}
+
+		const detectedLangCode = await detectLang(newMessage.text);
+		const detectedLang =
+			languages.find((lang) => lang.code === detectedLangCode)?.name ||
+			detectedLangCode;
+
+		updateMessage(newMessage.id, { detectedLang });
+		setIsDetecting(false);
 	};
 
 	const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -141,7 +143,7 @@ export default function Home() {
 									{isDetecting ? (
 										<Loader2 className="animate-spin size-3 ml-2" />
 									) : (
-										detectedLanguage
+										message.detectedLang
 									)}
 								</Badge>
 							</div>
