@@ -3,15 +3,25 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { SendHorizontal, Languages, FileText } from "lucide-react";
+import { SendHorizontal, Languages, FileText, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { checkDetectorSupport, detectLang } from "@/lib/detectorAPI";
+
+interface Message {
+	text: string;
+	id: number;
+	detectedLang?: string | null;
+}
 
 export default function Home() {
-	const [messages, setMessages] = useState<{ text: string; id: number }[]>(
-		[]
-	);
+	const [messages, setMessages] = useState<Message[]>([]);
 	const [currentMessage, setCurrentMessage] = useState("");
 	const [showTranslateOptions, setShowTranslateOptions] = useState(false);
 	const [selectedMessage, setSelectedMessage] = useState<number | null>(null);
+	const [detectedLanguage, setDetectedLanguage] = useState<
+		string | undefined
+	>();
+	const [isDetecting, setIsDetecting] = useState(false);
 
 	const languages = [
 		{ name: "English", code: "en" },
@@ -22,13 +32,34 @@ export default function Home() {
 		{ name: "French", code: "fr" },
 	];
 
-	const handleSend = () => {
+	const handleSend = async () => {
 		if (currentMessage.trim()) {
-			setMessages([
-				...messages,
-				{ text: currentMessage, id: Date.now() },
-			]);
+			const newMessage = {
+				text: currentMessage,
+				id: Date.now(),
+				detectedLang: detectedLanguage,
+			};
+
+			setMessages((prev) => [...prev, newMessage]);
 			setCurrentMessage("");
+
+			setIsDetecting(true);
+			const text = currentMessage;
+			let detectedLang: string | undefined;
+			if (!checkDetectorSupport()) {
+				detectedLang = "language detection is not supported";
+			} else {
+				detectedLang = await detectLang(text);
+				setDetectedLanguage(
+					languages.find((lang) => lang.code === detectedLang)?.name
+				);
+				if (detectedLanguage === undefined) {
+					setDetectedLanguage(detectedLang);
+				}
+			}
+			setIsDetecting(false);
+
+			console.log(detectedLanguage);
 		}
 	};
 
@@ -50,8 +81,19 @@ export default function Home() {
 				<CardContent className="flex-1 overflow-y-auto p-4 space-y-4 mb-16">
 					{messages.map((message) => (
 						<div key={message.id} className="space-y-6">
-							<div className="bg-primary rounded-lg p-3 max-w-[80%] w-fit ml-auto">
-								{message.text}
+							<div className="bg-primary rounded-lg p-3 max-w-[80%] w-fit ml-auto relative">
+								<p>{message.text}</p>
+								<Badge
+									variant={"secondary"}
+									className="text-nowrap absolute -bottom-2 right-2"
+								>
+									Detected Language:{" "}
+									{isDetecting ? (
+										<Loader2 className="animate-spin size-3 ml-2" />
+									) : (
+										detectedLanguage
+									)}
+								</Badge>
 							</div>
 							<div className="flex gap-2 w-fit rounded-lg">
 								{message.text.length > 150 && (
