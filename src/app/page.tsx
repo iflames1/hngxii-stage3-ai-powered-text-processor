@@ -14,7 +14,7 @@ export interface Message {
 	id: number;
 	detectedLang?: string;
 	translations?: { [key: string]: string };
-	summarization?: string;
+	summary?: string;
 }
 
 export default function Home() {
@@ -140,6 +140,7 @@ export default function Home() {
 							<ActionButtons
 								message={message}
 								handleTranslate={handleTranslate}
+								updateMessage={updateMessage}
 							/>
 							{showTranslateOptions &&
 								selectedMessage === message.id && (
@@ -165,6 +166,11 @@ export default function Home() {
 										</div>
 									)
 								)}
+							{message.summary && (
+								<div className="bg-background rounded-lg p-3 max-w-[80%] w-fit">
+									{message.summary}
+								</div>
+							)}
 						</div>
 					))}
 				</CardContent>

@@ -14,7 +14,7 @@ export default function Translation({
 }: TranslationProps) {
 	return (
 		<>
-			<div className="bg-secondary/20 rounded-lg p-3 max-w-[80%] w-fit">
+			<div className="bg-background rounded-lg p-3 max-w-[80%] w-fit">
 				{text}
 			</div>
 			<Badge
