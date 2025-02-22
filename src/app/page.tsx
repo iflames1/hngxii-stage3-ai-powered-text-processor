@@ -1,13 +1,13 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { checkDetectorSupport, detectLang } from "@/lib/detectorAPI";
-import { checkTanslatorSupport, translateFunc } from "@/lib/translationAPI";
 import InputArea from "./input-area";
 import UserText from "./user-text";
 import ActionButtons from "./action-buttons";
 import LangOptions from "./lang-options";
 import Translation from "./translation";
+import { db } from "@/lib/db";
 
 export interface Message {
 	text: string;
@@ -23,6 +23,19 @@ export default function Home() {
 	const [showTranslateOptions, setShowTranslateOptions] = useState(false);
 	const [selectedMessage, setSelectedMessage] = useState<number | null>(null);
 	const [isDetecting, setIsDetecting] = useState(false);
+	const [isTranslating, setIsTranslating] = useState(false);
+
+	useEffect(() => {
+		const loadMessages = async () => {
+			try {
+				const savedMessages = await db.messages.toArray();
+				setMessages(savedMessages.sort((a, b) => a.id - b.id));
+			} catch (error) {
+				console.error("Failed to load messages:", error);
+			}
+		};
+		loadMessages();
+	}, []);
 
 	const languages = [
 		{ name: "English", code: "en" },
@@ -33,12 +46,21 @@ export default function Home() {
 		{ name: "French", code: "fr" },
 	];
 
-	const updateMessage = (messageId: number, updates: Partial<Message>) => {
-		setMessages((prev) =>
-			prev.map((msg) =>
-				msg.id === messageId ? { ...msg, ...updates } : msg
-			)
-		);
+	const updateMessage = async (
+		messageId: number,
+		updates: Partial<Message>
+	) => {
+		try {
+			setMessages((prev) =>
+				prev.map((msg) =>
+					msg.id === messageId ? { ...msg, ...updates } : msg
+				)
+			);
+
+			await db.messages.update(messageId, updates);
+		} catch (error) {
+			console.error("Failed to update message:", error);
+		}
 	};
 
 	const handleSend = async () => {
@@ -50,73 +72,35 @@ export default function Home() {
 			id: Date.now(),
 		};
 
-		setMessages((prev) => [...prev, newMessage]);
-		setCurrentMessage("");
+		try {
+			await db.messages.add(newMessage);
 
-		if (!checkDetectorSupport()) {
-			updateMessage(newMessage.id, {
-				detectedLang: "Language detection not supported",
-			});
-			return;
+			setMessages((prev) => [...prev, newMessage]);
+			setCurrentMessage("");
+
+			if (!checkDetectorSupport()) {
+				await updateMessage(newMessage.id, {
+					detectedLang: "Language detection not supported",
+				});
+				return;
+			}
+
+			const detectedLangCode = await detectLang(newMessage.text);
+			const detectedLang =
+				languages.find((lang) => lang.code === detectedLangCode)
+					?.name || detectedLangCode;
+
+			await updateMessage(newMessage.id, { detectedLang });
+		} catch (error) {
+			console.error("Failed to save message:", error);
+		} finally {
+			setIsDetecting(false);
 		}
-
-		const detectedLangCode = await detectLang(newMessage.text);
-		const detectedLang =
-			languages.find((lang) => lang.code === detectedLangCode)?.name ||
-			detectedLangCode;
-
-		updateMessage(newMessage.id, { detectedLang });
-		setIsDetecting(false);
 	};
 
 	const handleTranslate = (messageId: number) => {
 		setSelectedMessage(messageId);
 		setShowTranslateOptions(true);
-	};
-
-	const handleLanguageSelect = async (
-		messageId: number,
-		targetLang: string
-	) => {
-		const message = messages.find((msg) => msg.id === messageId);
-		if (!message) return;
-
-		let translatedText: string = "";
-
-		if (!checkTanslatorSupport()) {
-			translatedText = "Language translation is not supported";
-		} else {
-			if (isDetecting) {
-				translatedText = "Detecting language, please wait";
-			} else {
-				const detectedLang = languages.find(
-					(lang) => lang.name === message.detectedLang
-				)?.code;
-				if (!detectedLang) {
-					translatedText = "Unable to detect language";
-				} else {
-					translatedText = await translateFunc(
-						detectedLang,
-						targetLang,
-						message.text
-					);
-				}
-			}
-		}
-
-		setMessages((prev) =>
-			prev.map((msg) =>
-				msg.id === messageId
-					? {
-							...msg,
-							translations: {
-								...msg.translations,
-								[targetLang]: translatedText,
-							},
-					  }
-					: msg
-			)
-		);
 	};
 
 	const getLanguageName = (code: string) => {
@@ -130,49 +114,63 @@ export default function Home() {
 		<div className="max-w-2xl mx-auto p-4 h-screen flex flex-col">
 			<Card className="flex flex-col h-full">
 				<CardContent className="flex-1 overflow-y-auto p-4 space-y-4 mb-16">
-					{messages.map((message) => (
-						<div key={message.id} className="space-y-6">
-							<UserText
-								message={message}
-								isDetecting={isDetecting}
-							/>
+					{messages.length === 0 ? (
+						<p className="text-center text-gray-500 h-full flex items-center justify-center">
+							Welcome to Chad AI, start by typing a message in the
+							input box below
+						</p>
+					) : (
+						messages.map((message) => (
+							<div key={message.id} className="space-y-6">
+								<UserText
+									message={message}
+									isDetecting={isDetecting}
+								/>
 
-							<ActionButtons
-								message={message}
-								handleTranslate={handleTranslate}
-								updateMessage={updateMessage}
-							/>
-							{showTranslateOptions &&
-								selectedMessage === message.id && (
-									<LangOptions
-										languages={languages}
-										message={message}
-										handleLanguageSelect={
-											handleLanguageSelect
-										}
-									/>
+								<ActionButtons
+									message={message}
+									handleTranslate={handleTranslate}
+									updateMessage={updateMessage}
+								/>
+								{showTranslateOptions &&
+									selectedMessage === message.id && (
+										<LangOptions
+											languages={languages}
+											message={message}
+											setIsTranslating={setIsTranslating}
+											updateMessage={updateMessage}
+											isDetecting={isDetecting}
+											messages={messages}
+										/>
+									)}
+								{message.translations &&
+									Object.entries(message.translations).map(
+										([lang, text]) => (
+											<div
+												key={lang}
+												className="relative"
+											>
+												<Translation
+													text={text}
+													lang={lang}
+													getLanguageName={
+														getLanguageName
+													}
+													isTranslating={
+														isTranslating
+													}
+												/>
+											</div>
+										)
+									)}
+								{message.summary && (
+									<div className="border border-input bg-background shadow-sm rounded-lg p-3 max-w-[80%] w-fit">
+										{message.summary}
+									</div>
 								)}
-							{message.translations &&
-								Object.entries(message.translations).map(
-									([lang, text]) => (
-										<div key={lang} className="relative">
-											<Translation
-												text={text}
-												lang={lang}
-												getLanguageName={
-													getLanguageName
-												}
-											/>
-										</div>
-									)
-								)}
-							{message.summary && (
-								<div className="bg-background rounded-lg p-3 max-w-[80%] w-fit">
-									{message.summary}
-								</div>
-							)}
-						</div>
-					))}
+							</div>
+						))
+					)}
 				</CardContent>
 				<InputArea
 					currentMessage={currentMessage}
