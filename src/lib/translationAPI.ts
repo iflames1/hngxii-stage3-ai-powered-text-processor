@@ -1,8 +1,8 @@
 export const checkTanslatorSupport = () => {
 	if ("ai" in self && "translator" in self.ai) {
-		return "The Translator API is supported.";
+		return true;
 	}
-	return "The Translator API is not supported.";
+	return false;
 };
 
 export const checkLanguageAvailability = async (
@@ -49,7 +49,7 @@ export const translateFunc = async (
 	);
 	let translator;
 	if (availability === "no") {
-		return "This browser can't translate";
+		return "Cannot translate between these languages";
 	} else if (availability === "readily") {
 		translator = await self.ai.translator.create({
 			sourceLanguage,
