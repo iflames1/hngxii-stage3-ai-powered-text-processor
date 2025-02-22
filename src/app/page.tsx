@@ -1,13 +1,13 @@
 "use client";
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { checkDetectorSupport, detectLang } from "@/lib/detectorAPI";
 import { checkTanslatorSupport, translateFunc } from "@/lib/translationAPI";
 import InputArea from "./input-area";
 import UserText from "./user-text";
 import ActionButtons from "./action-buttons";
+import LangOptions from "./lang-options";
 
 export interface Message {
 	text: string;
@@ -139,24 +139,13 @@ export default function Home() {
 							/>
 							{showTranslateOptions &&
 								selectedMessage === message.id && (
-									<div className="grid grid-cols-2 gap-2 mt-2 w-fit">
-										{languages.map((lang) => (
-											<Button
-												key={lang.code}
-												variant="outline"
-												size="sm"
-												className="justify-start"
-												onClick={() =>
-													handleLanguageSelect(
-														message.id,
-														lang.code
-													)
-												}
-											>
-												{lang.name}
-											</Button>
-										))}
-									</div>
+									<LangOptions
+										languages={languages}
+										message={message}
+										handleLanguageSelect={
+											handleLanguageSelect
+										}
+									/>
 								)}
 							{message.translations &&
 								Object.entries(message.translations).map(
