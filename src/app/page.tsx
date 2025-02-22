@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { checkDetectorSupport, detectLang } from "@/lib/detectorAPI";
 import InputArea from "./input-area";
@@ -24,6 +24,7 @@ export default function Home() {
 	const [selectedMessage, setSelectedMessage] = useState<number | null>(null);
 	const [isDetecting, setIsDetecting] = useState(false);
 	const [isTranslating, setIsTranslating] = useState(false);
+	const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
 		const loadMessages = async () => {
@@ -36,6 +37,10 @@ export default function Home() {
 		};
 		loadMessages();
 	}, []);
+
+	useEffect(() => {
+		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+	}, [messages]);
 
 	const languages = [
 		{ name: "English", code: "en" },
@@ -171,6 +176,7 @@ export default function Home() {
 							</div>
 						))
 					)}
+					<div ref={messagesEndRef} />
 				</CardContent>
 				<InputArea
 					currentMessage={currentMessage}
