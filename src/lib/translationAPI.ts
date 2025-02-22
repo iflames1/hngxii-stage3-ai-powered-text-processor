@@ -49,7 +49,7 @@ export const translateFunc = async (
 	);
 	let translator;
 	if (availability === "no") {
-		return "This browser can't translate";
+		return "Cannot translate between these languages";
 	} else if (availability === "readily") {
 		translator = await self.ai.translator.create({
 			sourceLanguage,

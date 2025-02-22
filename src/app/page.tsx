@@ -6,11 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { SendHorizontal, Languages, FileText, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { checkDetectorSupport, detectLang } from "@/lib/detectorAPI";
+import { checkTanslatorSupport, translateFunc } from "@/lib/translationAPI";
 
 interface Message {
 	text: string;
 	id: number;
-	detectedLang?: string | null;
+	detectedLang?: string;
+	translations?: { [key: string]: string };
 }
 
 export default function Home() {
@@ -75,6 +77,54 @@ export default function Home() {
 		setShowTranslateOptions(true);
 	};
 
+	const handleLanguageSelect = async (
+		messageId: number,
+		targetLang: string
+	) => {
+		const message = messages.find((msg) => msg.id === messageId);
+		if (!message) return;
+
+		let translatedText: string = "";
+
+		if (!checkTanslatorSupport()) {
+			translatedText = "Language translation is not supported";
+		} else {
+			const detectedLang = languages.find(
+				(lang) => lang.name === message.detectedLang
+			)?.code;
+			if (!detectedLang) {
+				translatedText = "Unable to detect language";
+			} else {
+				translatedText = await translateFunc(
+					detectedLang,
+					targetLang,
+					message.text
+				);
+			}
+		}
+
+		setMessages((prev) =>
+			prev.map((msg) =>
+				msg.id === messageId
+					? {
+							...msg,
+							translations: {
+								...msg.translations,
+								[targetLang]: translatedText,
+							},
+					  }
+					: msg
+			)
+		);
+	};
+
+	const getLanguageName = (code: string) => {
+		const language = languages.find(
+			(lang) => lang.code === code?.toLowerCase()
+		);
+		return language ? language.name : code;
+	};
+
 	return (
 		<div className="max-w-2xl mx-auto p-4 h-screen flex flex-col">
 			<Card className="flex flex-col h-full">
@@ -120,12 +170,33 @@ export default function Home() {
 												variant="outline"
 												size="sm"
 												className="justify-start"
-												onClick={() => {}}
+												onClick={() =>
+													handleLanguageSelect(
+														message.id,
+														lang.code
+													)
+												}
 											>
 												{lang.name}
 											</Button>
 										))}
 									</div>
+								)}
+							{message.translations &&
+								Object.entries(message.translations).map(
+									([lang, text]) => (
+										<div key={lang} className="relative">
+											<div className="bg-secondary/20 rounded-lg p-3 max-w-[80%] w-fit">
+												{text}
+											</div>
+											<Badge
+												variant="outline"
+												className="text-xs absolute -bottom-2 left-2"
+											>
+												{getLanguageName(lang)}
+											</Badge>
+										</div>
+									)
 								)}
 						</div>
 					))}

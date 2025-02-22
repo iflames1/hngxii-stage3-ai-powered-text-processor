@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
 	title: "Chad AI",
-	description: "Chad AI text processor chat bot",
+	description: "Chad fave text processor",
 };
 
 export default function RootLayout({
