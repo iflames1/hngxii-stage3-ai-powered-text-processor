@@ -1,8 +1,6 @@
 export const checkDetectorSupport = () => {
-	if ("ai" in self && "languageDetector" in self.ai) {
-		return "The Language Detector API is supported.";
-	}
-	return "The Language Detector API is not supported.";
+	if ("ai" in self && "languageDetector" in self.ai) return true;
+	else return false;
 };
 
 export const checkDetectorAvailability = async (): Promise<string> => {
@@ -22,7 +20,7 @@ export const initLangDetector = async () => {
 	let detector;
 	if (canDetect === "no") {
 		console.log("The language detector isn't usable.");
-		return;
+		return null;
 	}
 	if (canDetect === "readily") {
 		console.log("The language detector can immediately be used.");
@@ -50,6 +48,7 @@ export const initLangDetector = async () => {
 
 export const detectLang = async (text: string) => {
 	const detector = await initLangDetector();
+	if (!detector) return "Language detection is not supported.";
 	const results = await detector.detect(text);
 	for (const result of results) {
 		// Show the full list of potential languages with their likelihood, ranked
