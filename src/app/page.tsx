@@ -86,17 +86,21 @@ export default function Home() {
 		if (!checkTanslatorSupport()) {
 			translatedText = "Language translation is not supported";
 		} else {
-			const detectedLang = languages.find(
-				(lang) => lang.name === message.detectedLang
-			)?.code;
-			if (!detectedLang) {
-				translatedText = "Unable to detect language";
+			if (isDetecting) {
+				translatedText = "Detecting language, please wait";
 			} else {
-				translatedText = await translateFunc(
-					detectedLang,
-					targetLang,
-					message.text
-				);
+				const detectedLang = languages.find(
+					(lang) => lang.name === message.detectedLang
+				)?.code;
+				if (!detectedLang) {
+					translatedText = "Unable to detect language";
+				} else {
+					translatedText = await translateFunc(
+						detectedLang,
+						targetLang,
+						message.text
+					);
+				}
 			}
 		}
 
