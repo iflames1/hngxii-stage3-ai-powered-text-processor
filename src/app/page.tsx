@@ -1,18 +1,20 @@
 "use client";
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { SendHorizontal, Languages, FileText, Loader2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { checkDetectorSupport, detectLang } from "@/lib/detectorAPI";
 import { checkTanslatorSupport, translateFunc } from "@/lib/translationAPI";
+import InputArea from "./input-area";
+import UserText from "./user-text";
+import ActionButtons from "./action-buttons";
+import LangOptions from "./lang-options";
+import Translation from "./translation";
 
-interface Message {
+export interface Message {
 	text: string;
 	id: number;
 	detectedLang?: string;
 	translations?: { [key: string]: string };
+	summary?: string;
 }
 
 export default function Home() {
@@ -20,9 +22,6 @@ export default function Home() {
 	const [currentMessage, setCurrentMessage] = useState("");
 	const [showTranslateOptions, setShowTranslateOptions] = useState(false);
 	const [selectedMessage, setSelectedMessage] = useState<number | null>(null);
-	const [detectedLanguage, setDetectedLanguage] = useState<
-		string | undefined
-	>();
 	const [isDetecting, setIsDetecting] = useState(false);
 
 	const languages = [
@@ -34,42 +33,40 @@ export default function Home() {
 		{ name: "French", code: "fr" },
 	];
 
-	const handleSend = async () => {
-		if (currentMessage.trim()) {
-			setIsDetecting(true);
-
-			const newMessage = {
-				text: currentMessage,
-				id: Date.now(),
-				detectedLang: detectedLanguage,
-			};
-
-			setMessages((prev) => [...prev, newMessage]);
-			setCurrentMessage("");
-
-			const text = currentMessage;
-			let detectedLang: string | undefined;
-			if (!checkDetectorSupport()) {
-				detectedLang = "language detection is not supported";
-				setDetectedLanguage(detectedLang);
-			} else {
-				detectedLang = await detectLang(text);
-				detectedLang =
-					languages.find((lang) => lang.code === detectedLang)
-						?.name || detectedLang;
-				setDetectedLanguage(detectedLang);
-			}
-			setIsDetecting(false);
-
-			console.log(detectedLanguage);
-		}
+	const updateMessage = (messageId: number, updates: Partial<Message>) => {
+		setMessages((prev) =>
+			prev.map((msg) =>
+				msg.id === messageId ? { ...msg, ...updates } : msg
+			)
+		);
 	};
 
-	const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-		if (e.key === "Enter" && !e.shiftKey) {
-			e.preventDefault();
-			handleSend();
+	const handleSend = async () => {
+		if (!currentMessage.trim()) return;
+		setIsDetecting(true);
+
+		const newMessage: Message = {
+			text: currentMessage,
+			id: Date.now(),
+		};
+
+		setMessages((prev) => [...prev, newMessage]);
+		setCurrentMessage("");
+
+		if (!checkDetectorSupport()) {
+			updateMessage(newMessage.id, {
+				detectedLang: "Language detection not supported",
+			});
+			return;
 		}
+
+		const detectedLangCode = await detectLang(newMessage.text);
+		const detectedLang =
+			languages.find((lang) => lang.code === detectedLangCode)?.name ||
+			detectedLangCode;
+
+		updateMessage(newMessage.id, { detectedLang });
+		setIsDetecting(false);
 	};
 
 	const handleTranslate = (messageId: number) => {
@@ -89,17 +86,21 @@ export default function Home() {
 		if (!checkTanslatorSupport()) {
 			translatedText = "Language translation is not supported";
 		} else {
-			const detectedLang = languages.find(
-				(lang) => lang.name === message.detectedLang
-			)?.code;
-			if (!detectedLang) {
-				translatedText = "Unable to detect language";
+			if (isDetecting) {
+				translatedText = "Detecting language, please wait";
 			} else {
-				translatedText = await translateFunc(
-					detectedLang,
-					targetLang,
-					message.text
-				);
+				const detectedLang = languages.find(
+					(lang) => lang.name === message.detectedLang
+				)?.code;
+				if (!detectedLang) {
+					translatedText = "Unable to detect language";
+				} else {
+					translatedText = await translateFunc(
+						detectedLang,
+						targetLang,
+						message.text
+					);
+				}
 			}
 		}
 
@@ -131,94 +132,53 @@ export default function Home() {
 				<CardContent className="flex-1 overflow-y-auto p-4 space-y-4 mb-16">
 					{messages.map((message) => (
 						<div key={message.id} className="space-y-6">
-							<div className="bg-primary rounded-lg p-3 max-w-[80%] w-fit ml-auto relative">
-								<p>{message.text}</p>
-								<Badge
-									variant={"secondary"}
-									className="text-nowrap absolute -bottom-2 right-2"
-								>
-									Detected Language:{" "}
-									{isDetecting ? (
-										<Loader2 className="animate-spin size-3 ml-2" />
-									) : (
-										detectedLanguage
-									)}
-								</Badge>
-							</div>
-							<div className="flex gap-2 w-fit rounded-lg">
-								{message.text.length > 150 && (
-									<Button variant="outline" size="sm">
-										<FileText className="w-4 h-4 mr-2" />
-										Summarize
-									</Button>
-								)}
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => handleTranslate(message.id)}
-								>
-									<Languages className="w-4 h-4 mr-2" />
-									Translate
-								</Button>
-							</div>
+							<UserText
+								message={message}
+								isDetecting={isDetecting}
+							/>
+
+							<ActionButtons
+								message={message}
+								handleTranslate={handleTranslate}
+								updateMessage={updateMessage}
+							/>
 							{showTranslateOptions &&
 								selectedMessage === message.id && (
-									<div className="grid grid-cols-2 gap-2 mt-2 w-fit">
-										{languages.map((lang) => (
-											<Button
-												key={lang.code}
-												variant="outline"
-												size="sm"
-												className="justify-start"
-												onClick={() =>
-													handleLanguageSelect(
-														message.id,
-														lang.code
-													)
-												}
-											>
-												{lang.name}
-											</Button>
-										))}
-									</div>
+									<LangOptions
+										languages={languages}
+										message={message}
+										handleLanguageSelect={
+											handleLanguageSelect
+										}
+									/>
 								)}
 							{message.translations &&
 								Object.entries(message.translations).map(
 									([lang, text]) => (
 										<div key={lang} className="relative">
-											<div className="bg-secondary/20 rounded-lg p-3 max-w-[80%] w-fit">
-												{text}
-											</div>
-											<Badge
-												variant="outline"
-												className="text-xs absolute -bottom-2 left-2"
-											>
-												{getLanguageName(lang)}
-											</Badge>
+											<Translation
+												text={text}
+												lang={lang}
+												getLanguageName={
+													getLanguageName
+												}
+											/>
 										</div>
 									)
 								)}
+							{message.summary && (
+								<div className="bg-background rounded-lg p-3 max-w-[80%] w-fit">
+									{message.summary}
+								</div>
+							)}
 						</div>
 					))}
 				</CardContent>
-				<div className="border p-4">
-					<div className="p-4 border-t flex gap-2 fixed bottom-0 left-0 right-0 bg-background max-w-2xl mx-auto">
-						<Textarea
-							value={currentMessage}
-							onChange={(e) => setCurrentMessage(e.target.value)}
-							onKeyDown={handleKeyPress}
-							placeholder="Type your message here..."
-							rows={1}
-						/>
-						<Button
-							onClick={handleSend}
-							size="icon"
-							className="shrink-0"
-						>
-							<SendHorizontal className="h-4 w-4" />
-						</Button>
-					</div>
-				</div>
+				<InputArea
+					currentMessage={currentMessage}
+					setCurrentMessage={setCurrentMessage}
+					handleSend={handleSend}
+				/>
 			</Card>
 		</div>
 	);
