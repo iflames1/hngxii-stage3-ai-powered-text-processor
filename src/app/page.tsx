@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { checkDetectorSupport, detectLang } from "@/lib/detectorAPI";
-import { checkTanslatorSupport, translateFunc } from "@/lib/translationAPI";
 import InputArea from "./input-area";
 import UserText from "./user-text";
 import ActionButtons from "./action-buttons";
@@ -23,6 +22,7 @@ export default function Home() {
 	const [showTranslateOptions, setShowTranslateOptions] = useState(false);
 	const [selectedMessage, setSelectedMessage] = useState<number | null>(null);
 	const [isDetecting, setIsDetecting] = useState(false);
+	const [isTranslating, setIsTranslating] = useState(false);
 
 	const languages = [
 		{ name: "English", code: "en" },
@@ -74,51 +74,6 @@ export default function Home() {
 		setShowTranslateOptions(true);
 	};
 
-	const handleLanguageSelect = async (
-		messageId: number,
-		targetLang: string
-	) => {
-		const message = messages.find((msg) => msg.id === messageId);
-		if (!message) return;
-
-		let translatedText: string = "";
-
-		if (!checkTanslatorSupport()) {
-			translatedText = "Language translation is not supported";
-		} else {
-			if (isDetecting) {
-				translatedText = "Detecting language, please wait";
-			} else {
-				const detectedLang = languages.find(
-					(lang) => lang.name === message.detectedLang
-				)?.code;
-				if (!detectedLang) {
-					translatedText = "Unable to detect language";
-				} else {
-					translatedText = await translateFunc(
-						detectedLang,
-						targetLang,
-						message.text
-					);
-				}
-			}
-		}
-
-		setMessages((prev) =>
-			prev.map((msg) =>
-				msg.id === messageId
-					? {
-							...msg,
-							translations: {
-								...msg.translations,
-								[targetLang]: translatedText,
-							},
-					  }
-					: msg
-			)
-		);
-	};
-
 	const getLanguageName = (code: string) => {
 		const language = languages.find(
 			(lang) => lang.code === code?.toLowerCase()
@@ -147,9 +102,10 @@ export default function Home() {
 									<LangOptions
 										languages={languages}
 										message={message}
-										handleLanguageSelect={
-											handleLanguageSelect
-										}
+										setIsTranslating={setIsTranslating}
+										updateMessage={updateMessage}
+										isDetecting={isDetecting}
+										messages={messages}
 									/>
 								)}
 							{message.translations &&
@@ -162,12 +118,13 @@ export default function Home() {
 												getLanguageName={
 													getLanguageName
 												}
+												isTranslating={isTranslating}
 											/>
 										</div>
 									)
 								)}
 							{message.summary && (
-								<div className="bg-background rounded-lg p-3 max-w-[80%] w-fit">
+								<div className="border border-input bg-background shadow-sm rounded-lg p-3 max-w-[80%] w-fit">
 									{message.summary}
 								</div>
 							)}
