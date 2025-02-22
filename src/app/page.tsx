@@ -1,13 +1,13 @@
 "use client";
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { checkDetectorSupport, detectLang } from "@/lib/detectorAPI";
 import { checkTanslatorSupport, translateFunc } from "@/lib/translationAPI";
 import InputArea from "./input-area";
 import UserText from "./user-text";
 import ActionButtons from "./action-buttons";
 import LangOptions from "./lang-options";
+import Translation from "./translation";
 
 export interface Message {
 	text: string;
@@ -151,15 +151,13 @@ export default function Home() {
 								Object.entries(message.translations).map(
 									([lang, text]) => (
 										<div key={lang} className="relative">
-											<div className="bg-secondary/20 rounded-lg p-3 max-w-[80%] w-fit">
-												{text}
-											</div>
-											<Badge
-												variant="outline"
-												className="text-xs absolute -bottom-2 left-2"
-											>
-												{getLanguageName(lang)}
-											</Badge>
+											<Translation
+												text={text}
+												lang={lang}
+												getLanguageName={
+													getLanguageName
+												}
+											/>
 										</div>
 									)
 								)}
