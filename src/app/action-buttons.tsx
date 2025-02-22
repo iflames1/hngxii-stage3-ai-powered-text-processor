@@ -14,12 +14,14 @@ export default function ActionButtons({
 }: ActionButtonsProps) {
 	return (
 		<div className="flex gap-2 w-fit rounded-lg">
-			{message.text.length > 150 && (
-				<Button variant="outline" size="sm">
-					<FileText className="w-4 h-4 mr-2" />
-					Summarize
-				</Button>
-			)}
+			{message.text.length > 150 &&
+				(message.detectedLang === "English" ||
+					message.detectedLang === "en") && (
+					<Button variant="outline" size="sm">
+						<FileText className="w-4 h-4 mr-2" />
+						Summarize
+					</Button>
+				)}
 			<Button
 				variant="outline"
 				size="sm"
