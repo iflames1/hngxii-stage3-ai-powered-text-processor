@@ -2,12 +2,12 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Languages, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { checkDetectorSupport, detectLang } from "@/lib/detectorAPI";
 import { checkTanslatorSupport, translateFunc } from "@/lib/translationAPI";
 import InputArea from "./input-area";
 import UserText from "./user-text";
+import ActionButtons from "./action-buttons";
 
 export interface Message {
 	text: string;
@@ -132,22 +132,11 @@ export default function Home() {
 								message={message}
 								isDetecting={isDetecting}
 							/>
-							<div className="flex gap-2 w-fit rounded-lg">
-								{message.text.length > 150 && (
-									<Button variant="outline" size="sm">
-										<FileText className="w-4 h-4 mr-2" />
-										Summarize
-									</Button>
-								)}
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => handleTranslate(message.id)}
-								>
-									<Languages className="w-4 h-4 mr-2" />
-									Translate
-								</Button>
-							</div>
+
+							<ActionButtons
+								message={message}
+								handleTranslate={handleTranslate}
+							/>
 							{showTranslateOptions &&
 								selectedMessage === message.id && (
 									<div className="grid grid-cols-2 gap-2 mt-2 w-fit">
