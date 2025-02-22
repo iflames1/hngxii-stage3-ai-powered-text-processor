@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { checkDetectorSupport, detectLang } from "@/lib/detectorAPI";
 import InputArea from "./input-area";
@@ -7,6 +7,7 @@ import UserText from "./user-text";
 import ActionButtons from "./action-buttons";
 import LangOptions from "./lang-options";
 import Translation from "./translation";
+import { db } from "@/lib/db";
 
 export interface Message {
 	text: string;
@@ -24,6 +25,18 @@ export default function Home() {
 	const [isDetecting, setIsDetecting] = useState(false);
 	const [isTranslating, setIsTranslating] = useState(false);
 
+	useEffect(() => {
+		const loadMessages = async () => {
+			try {
+				const savedMessages = await db.messages.toArray();
+				setMessages(savedMessages.sort((a, b) => a.id - b.id));
+			} catch (error) {
+				console.error("Failed to load messages:", error);
+			}
+		};
+		loadMessages();
+	}, []);
+
 	const languages = [
 		{ name: "English", code: "en" },
 		{ name: "Portuguese", code: "pt" },
@@ -33,12 +46,21 @@ export default function Home() {
 		{ name: "French", code: "fr" },
 	];
 
-	const updateMessage = (messageId: number, updates: Partial<Message>) => {
-		setMessages((prev) =>
-			prev.map((msg) =>
-				msg.id === messageId ? { ...msg, ...updates } : msg
-			)
-		);
+	const updateMessage = async (
+		messageId: number,
+		updates: Partial<Message>
+	) => {
+		try {
+			setMessages((prev) =>
+				prev.map((msg) =>
+					msg.id === messageId ? { ...msg, ...updates } : msg
+				)
+			);
+
+			await db.messages.update(messageId, updates);
+		} catch (error) {
+			console.error("Failed to update message:", error);
+		}
 	};
 
 	const handleSend = async () => {
@@ -50,23 +72,30 @@ export default function Home() {
 			id: Date.now(),
 		};
 
-		setMessages((prev) => [...prev, newMessage]);
-		setCurrentMessage("");
+		try {
+			await db.messages.add(newMessage);
 
-		if (!checkDetectorSupport()) {
-			updateMessage(newMessage.id, {
-				detectedLang: "Language detection not supported",
-			});
-			return;
+			setMessages((prev) => [...prev, newMessage]);
+			setCurrentMessage("");
+
+			if (!checkDetectorSupport()) {
+				await updateMessage(newMessage.id, {
+					detectedLang: "Language detection not supported",
+				});
+				return;
+			}
+
+			const detectedLangCode = await detectLang(newMessage.text);
+			const detectedLang =
+				languages.find((lang) => lang.code === detectedLangCode)
+					?.name || detectedLangCode;
+
+			await updateMessage(newMessage.id, { detectedLang });
+		} catch (error) {
+			console.error("Failed to save message:", error);
+		} finally {
+			setIsDetecting(false);
 		}
-
-		const detectedLangCode = await detectLang(newMessage.text);
-		const detectedLang =
-			languages.find((lang) => lang.code === detectedLangCode)?.name ||
-			detectedLangCode;
-
-		updateMessage(newMessage.id, { detectedLang });
-		setIsDetecting(false);
 	};
 
 	const handleTranslate = (messageId: number) => {

@@ -60,20 +60,6 @@ export default function LangOptions({
 			},
 		});
 
-		//setMessages((prev) =>
-		//	prev.map((msg) =>
-		//		msg.id === messageId
-		//			? {
-		//					...msg,
-		//					translations: {
-		//						...msg.translations,
-		//						[targetLang]: translatedText,
-		//					},
-		//			  }
-		//			: msg
-		//	)
-		//);
-
 		if (!isDetecting) setIsTranslating(true);
 	};
 
