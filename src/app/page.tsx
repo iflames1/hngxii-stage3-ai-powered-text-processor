@@ -34,6 +34,8 @@ export default function Home() {
 
 	const handleSend = async () => {
 		if (currentMessage.trim()) {
+			setIsDetecting(true);
+
 			const newMessage = {
 				text: currentMessage,
 				id: Date.now(),
@@ -43,7 +45,6 @@ export default function Home() {
 			setMessages((prev) => [...prev, newMessage]);
 			setCurrentMessage("");
 
-			setIsDetecting(true);
 			const text = currentMessage;
 			let detectedLang: string | undefined;
 			if (!checkDetectorSupport()) {
@@ -51,12 +52,10 @@ export default function Home() {
 				setDetectedLanguage(detectedLang);
 			} else {
 				detectedLang = await detectLang(text);
-				setDetectedLanguage(
-					languages.find((lang) => lang.code === detectedLang)?.name
-				);
-				if (detectedLanguage === undefined) {
-					setDetectedLanguage(detectedLang);
-				}
+				detectedLang =
+					languages.find((lang) => lang.code === detectedLang)
+						?.name || detectedLang;
+				setDetectedLanguage(detectedLang);
 			}
 			setIsDetecting(false);
 
@@ -121,12 +120,7 @@ export default function Home() {
 												variant="outline"
 												size="sm"
 												className="justify-start"
-												onClick={() => {
-													// Handle translation here
-													setShowTranslateOptions(
-														false
-													);
-												}}
+												onClick={() => {}}
 											>
 												{lang.name}
 											</Button>

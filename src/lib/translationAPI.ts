@@ -1,8 +1,8 @@
 export const checkTanslatorSupport = () => {
 	if ("ai" in self && "translator" in self.ai) {
-		return "The Translator API is supported.";
+		return true;
 	}
-	return "The Translator API is not supported.";
+	return false;
 };
 
 export const checkLanguageAvailability = async (
