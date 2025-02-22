@@ -43,9 +43,23 @@ export const translateFunc = async (
 	targetLanguage: string,
 	text: string
 ): Promise<string> => {
-	const translator = await self.ai.translator.create({
+	const availability = await checkLanguageAvailability(
 		sourceLanguage,
-		targetLanguage,
-	});
+		targetLanguage
+	);
+	let translator;
+	if (availability === "no") {
+		return "This browser can't translate";
+	} else if (availability === "readily") {
+		translator = await self.ai.translator.create({
+			sourceLanguage,
+			targetLanguage,
+		});
+	} else if (availability === "after-download") {
+		translator = await lanPairDownloadProgress(
+			sourceLanguage,
+			targetLanguage
+		);
+	}
 	return await translator.translate(text);
 };
