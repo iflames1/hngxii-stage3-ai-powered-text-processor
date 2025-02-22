@@ -48,6 +48,7 @@ export default function Home() {
 			let detectedLang: string | undefined;
 			if (!checkDetectorSupport()) {
 				detectedLang = "language detection is not supported";
+				setDetectedLanguage(detectedLang);
 			} else {
 				detectedLang = await detectLang(text);
 				setDetectedLanguage(
