@@ -15,6 +15,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
 	title: "Chad AI",
 	description: "Chad fave text processor",
+	other: {
+		"http-equiv": "origin-trial",
+		content: process.env.NEXT_PUBLIC_TRANSLATOR_API || "",
+		"http-equiv-2": "origin-trial",
+		content2: process.env.NEXT_PUBLIC_SUMMARIZATION_API || "",
+		"http-equiv-3": "origin-trial",
+		content3: process.env.NEXT_PUBLIC_DETECTOR_API || "",
+	},
 };
 
 export default function RootLayout({
